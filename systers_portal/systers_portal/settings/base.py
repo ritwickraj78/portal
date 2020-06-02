@@ -164,3 +164,16 @@ ANONYMOUS_USER_ID = None
 
 # Django Crispy Forms configuration
 CRISPY_TEMPLATE_PACK = 'bootstrap3'
+
+# Settings for Facebook OAuth
+SOCIALACCOUNT_PROVIDERS = \
+    {'facebook': {'METHOD': 'oauth2',
+                  'SDK_URL': '//connect.facebook.net/{locale}/sdk.js',
+                  'SCOPE': ['email', 'public_profile'],
+                  'AUTH_PARAMS': {'auth_type': 'reauthenticate'},
+                  'INIT_PARAMS': {'cookie': True},
+                  'FIELDS': ['id', 'email', 'locale'],
+                  'EXCHANGE_TOKEN': True,
+                  'LOCALE_FUNC': 'path.to.callable',
+                  'VERIFIED_EMAIL': False,
+                  'VERSION': 'v7.0'}}
