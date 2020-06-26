@@ -79,6 +79,10 @@
             <li {% if url == request.path %}class="active"{% endif %}>
               <a role="menuitem" href="{{ url }}">Upcoming Meetups</a>
             </li>
+            {% url 'all_upcoming_meetups' as url %}
+            <li {% if url == request.path %}class="active"{% endif %}>
+              <a role="menuitem" href="{{ url }}">Search Meetups</a>
+            </li>
             {% url 'past_meetups' as url %}
             <li {% if url == request.path %}class="active"{% endif %}>
               <a role="menuitem" href="{{ url }}">Past Meetups</a>
