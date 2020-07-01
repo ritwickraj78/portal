@@ -17,6 +17,8 @@ from django.contrib.contenttypes.models import ContentType
 from django.http import JsonResponse
 from braces.views import FormValidMessageMixin, FormInvalidMessageMixin
 from geopy import Nominatim
+from ipware import get_client_ip
+
 from .forms import (AddMeetupForm, EditMeetupForm, AddMeetupCommentForm,
                     EditMeetupCommentForm, RsvpForm, AddSupportRequestForm,
                     EditSupportRequestForm, AddSupportRequestCommentForm,
@@ -47,16 +49,12 @@ class RequestMeetupView(LoginRequiredMixin, CreateView):
         return reverse('upcoming_meetups')
 
     def get_form_kwargs(self):
-        """Add request user, meetup location to the form kwargs.
+        """Add request user to the form kwargs.
         Used to autofill form fields with requestor without
         explicitly filling them up in the form."""
         kwargs = super(RequestMeetupView, self).get_form_kwargs()
         kwargs.update({'created_by': self.request.user})
         return kwargs
-
-    def get_meetup_location(self):
-        """Add MeetupLocation object to the context"""
-        return self.meetup_location
 
 
 class NewMeetupRequestsListView(LoginRequiredMixin, PermissionRequiredMixin, ListView):
@@ -71,10 +69,6 @@ class NewMeetupRequestsListView(LoginRequiredMixin, PermissionRequiredMixin, Lis
         request_meetups_list = \
             RequestMeetup.objects.filter(is_approved=False).order_by('date', 'time')
         return request_meetups_list
-
-    def get_meetup_location(self):
-        """Add MeetupLocation object to the context"""
-        return self.meetup_location
 
     def check_permissions(self, request):
         """Check if the request user has the permission to view the meetup requests.
@@ -106,7 +100,7 @@ class ViewMeetupRequestView(LoginRequiredMixin, PermissionRequiredMixin, FormVie
         return kwargs
 
     def check_permissions(self, request):
-        """Check if the request user has the permission to view meetup request in meetup location.
+        """Check if the request user has the permission to view meetup request .
         The permission holds true for superusers."""
         return self.request.user.has_perm("meetup.view_meetup_request")
 
@@ -121,7 +115,6 @@ class ApproveRequestMeetupView(LoginRequiredMixin, PermissionRequiredMixin, Redi
         """Supply the redirect URL in case of successful approval.
         * Creates a new RequestMeetup object and copy fields,
             values from RequestMeetup object
-        * Adds the requestor as the meetup location moderator
         * Sets the RequestMeetup object's is_approved field to True.
         """
         meetup_request = get_object_or_404(RequestMeetup, slug=self.kwargs['meetup_slug'])
@@ -161,7 +154,7 @@ class ApproveRequestMeetupView(LoginRequiredMixin, PermissionRequiredMixin, Redi
         return STATUS, SUCCESS_MEETUP_MSG, messages.INFO
 
     def check_permissions(self, request):
-        """Check if the request user has the permission to add a meetup to the meetup location.
+        """Check if the request user has the permission to add a meetup .
         The permission holds true for superusers."""
         return self.request.user.has_perm("meetup.approve_meetup_request")
 
@@ -186,7 +179,7 @@ class RejectMeetupRequestView(LoginRequiredMixin, PermissionRequiredMixin, Delet
         return self.meetup_request
 
     def check_permissions(self, request):
-        """Check if the request user has the permission to reject a meetup in the meetup location.
+        """Check if the request user has the permission to reject a meetup.
         The permission holds true for superusers."""
         return self.request.user.has_perm("meetup.reject_meetup_request")
 
@@ -203,7 +196,11 @@ class AllUpcomingMeetupsView(ListView):
         context['cities_list'] = City.objects.all()
         context['meetup_list'] = meetup_list
         g = GeoIP2()
-        context['current_city'] = g.city(get_client_ip(self.request))['city']
+        client_ip, is_routable = get_client_ip(self.request)
+        if is_routable:
+            context['current_city'] = g.city(client_ip)['city']
+        else:
+            context['current_city'] = g.city("google.com")['city']
         return context
 
 
@@ -245,20 +242,16 @@ class AddMeetupView(FormValidMessageMixin, FormInvalidMessageMixin, LoginRequire
         return reverse("view_meetup", kwargs={"slug": self.object.slug})
 
     def get_form_kwargs(self):
-        """Add request user and meetup location object to the form kwargs.
-        Used to autofill form fields with created_by and meetup_location without
+        """Add request user object to the form kwargs.
+        Used to autofill form fields with created_by without
         explicitly filling them up in the form."""
         kwargs = super(AddMeetupView, self).get_form_kwargs()
         kwargs.update({'created_by': self.request.user,
                        'leader': self.request.user})
         return kwargs
 
-    def get_meetup_location(self):
-        """Add MeetupLocation object to the context"""
-        return self.meetup_location
-
     def check_permissions(self, request):
-        """Check if the request user has the permission to add a meetup to the meetup location.
+        """Check if the request user has the permission to add a meetup .
         The permission holds true for superusers."""
         return request.user.has_perm('meetup.add_meetups')
 
@@ -271,12 +264,12 @@ class DeleteMeetupView(LoginRequiredMixin, PermissionRequiredMixin, DeleteView):
     raise_exception = True
 
     def get_success_url(self):
-        """Redirect to meetup location's about page in case of successful deletion"""
+        """Redirect to upcoming meetups page in case of successful deletion"""
         return reverse("upcoming_meetups")
 
     def check_permissions(self, request):
-        """Check if the request user has the permission to delete a meetup from the meetup
-        location. The permission holds true for superusers."""
+        """Check if the request user has the permission to delete a meetup.
+         The permission holds true for superusers."""
         return request.user.has_perm('meetup.delete_meetups')
 
 
@@ -304,7 +297,7 @@ class EditMeetupView(FormValidMessageMixin, FormInvalidMessageMixin, LoginRequir
         return context
 
     def check_permissions(self, request):
-        """Check if the request user has the permission to edit a meetup from the meetup location.
+        """Check if the request user has the permission to edit a meetup.
         The permission holds true for superusers."""
         return request.user.has_perm('meetup.change_meetups')
 
@@ -333,10 +326,6 @@ class PastMeetupListView(ListView):
         """Set ListView queryset to all the meetups whose date is less than the current date"""
         meetup_list = Meetup.objects.filter(date__lt=datetime.date.today()).order_by('date', 'time')
         return meetup_list
-
-    def get_meetup_location(self):
-        """Add MeetupLocation object to the context"""
-        return self.meetup_location
 
 
 class AddMeetupCommentView(FormValidMessageMixin, FormInvalidMessageMixin, LoginRequiredMixin,
@@ -367,10 +356,6 @@ class AddMeetupCommentView(FormValidMessageMixin, FormInvalidMessageMixin, Login
         context = super(AddMeetupCommentView, self).get_context_data(**kwargs)
         context['meetup'] = self.meetup
         return context
-
-    def get_meetup_location(self):
-        """Add MeetupLocation object to the context"""
-        return self.meetup_location
 
 
 class EditMeetupCommentView(FormValidMessageMixin, FormInvalidMessageMixin, LoginRequiredMixin,
@@ -457,10 +442,6 @@ class RsvpMeetupView(FormValidMessageMixin, FormInvalidMessageMixin, LoginRequir
         context['meetup'] = self.meetup
         return context
 
-    def get_meetup_location(self):
-        """Add MeetupLocation object to the context"""
-        return self.meetup_location
-
 
 class RsvpGoingView(LoginRequiredMixin, ListView):
     """List of members whose rsvp status is 'coming'"""
@@ -479,10 +460,6 @@ class RsvpGoingView(LoginRequiredMixin, ListView):
         context = super(RsvpGoingView, self).get_context_data(**kwargs)
         context['meetup'] = self.meetup
         return context
-
-    def get_meetup_location(self):
-        """Add MeetupLocation object to the context"""
-        return self.meetup_location
 
 
 class AddSupportRequestView(FormValidMessageMixin, FormInvalidMessageMixin,
@@ -620,10 +597,6 @@ class UnapprovedSupportRequestsListView(LoginRequiredMixin, PermissionRequiredMi
         context['meetup'] = self.meetup
         return context
 
-    def get_meetup_location(self):
-        """Add MeetupLocation object to the context"""
-        return self.meetup_location
-
     def check_permissions(self, request):
         """Check if the request user has the permission to approve a support request."""
         return request.user.has_perm('meetup.approve_support_request')
@@ -645,10 +618,6 @@ class ApproveSupportRequestView(LoginRequiredMixin, PermissionRequiredMixin,
         support_request.save()
         return reverse('unapproved_support_requests', kwargs={'slug': self.meetup.slug})
 
-    def get_meetup_location(self):
-        """Add MeetupLocation object to the context"""
-        return self.meetup_location
-
     def check_permissions(self, request):
         """Check if the request user has the permission to approve a support request."""
         return request.user.has_perm('meetup.approve_support_request')
@@ -666,10 +635,6 @@ class RejectSupportRequestView(LoginRequiredMixin, PermissionRequiredMixin, Redi
         support_request = get_object_or_404(SupportRequest, pk=self.kwargs['pk'])
         support_request.delete()
         return reverse('unapproved_support_requests', kwargs={'slug': self.meetup.slug})
-
-    def get_meetup_location(self):
-        """Add MeetupLocation object to the context"""
-        return self.meetup_location
 
     def check_permissions(self, request):
         """Check if the request user has the permission to reject a support request."""
@@ -810,20 +775,8 @@ class ApiForVmsView(APIView):
         return (apiforvmsview.return_meetup_data(meetups))
 
 
-def get_client_ip(request):
-    x_forwarded_for = request.META.get('HTTP_X_FORWARDED_FOR')
-    if x_forwarded_for:
-        ip = x_forwarded_for.split(',')[0]
-    else:
-        ip = request.META.get('REMOTE_ADDR')
-    if ip == '127.0.0.1':
-        return "google.com"
-    return ip
-
-
 class UpcomingMeetupsSearchView(ListView):
-    """Search Upcoming Meetups By Meetup Location, Date & Keyword and Filter by Date &
-    Distance"""
+    """Search Upcoming Meetups By  Keyword and Filter Date and Distance"""
     template_name = "meetup/list_meetup.html"
     model = Meetup
 
@@ -832,7 +785,8 @@ class UpcomingMeetupsSearchView(ListView):
         if request.method == 'POST':
             keyword = request.POST.get('keyword')
             location = request.POST.get('location')
-            searched_meetups = Meetup.objects.filter(Q(title__icontains=keyword))
+            searched_meetups = Meetup.objects.filter(Q(date__gte=datetime.date.today()),
+                                                     Q(title__icontains=keyword))
             results = list()
             unit = ''
             for meetup in searched_meetups:
@@ -840,7 +794,11 @@ class UpcomingMeetupsSearchView(ListView):
                 geolocator = Nominatim(timeout=6)
                 g = GeoIP2()
                 if location == "Current Location":
-                    lat, long = g.lat_lon(get_client_ip(request))
+                    client_ip, is_routable = get_client_ip(request)
+                    if is_routable:
+                        lat, long = g.lat_lon(client_ip)
+                    else:
+                            lat, long = g.lat_lon("google.com")
                     user_point = Point((float)(long),
                                        (float)(lat))
                 else:
