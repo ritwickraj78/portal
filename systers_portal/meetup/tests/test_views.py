@@ -1141,7 +1141,6 @@ class UpcomingMeetupsSearchViewTestCase(MeetupBaseCase, TestCase):
         self.systers_user = SystersUser.objects.get(user=self.user)
         country = Country.objects.create(name='Bar', continent='AS')
         self.location = City.objects.create(name='Baz', display_name='Baz', country=country)
-        self.location1 = City.objects.all()[0]
         self.meetup = Meetup.objects.create(title='Foo Bar Baz', slug='foo-bar-baz',
                                             date=(timezone.now() + timezone.timedelta(4)).date(),
                                             time=timezone.now().time(),
@@ -1151,6 +1150,7 @@ class UpcomingMeetupsSearchViewTestCase(MeetupBaseCase, TestCase):
                                             created_by=self.systers_user,
                                             leader=self.systers_user,
                                             last_updated=timezone.now())
+
         self.meetup2 = Meetup.objects.create(title='Foo Baz', slug='foobar',
                                              date=timezone.now().date(),
                                              time=timezone.now().time(),
@@ -1160,12 +1160,13 @@ class UpcomingMeetupsSearchViewTestCase(MeetupBaseCase, TestCase):
                                              created_by=self.systers_user,
                                              leader=self.systers_user,
                                              last_updated=timezone.now())
+
         self.meetup3 = Meetup.objects.create(title='Foob Baz', slug='foobarbaz',
                                              date=(timezone.now() + timezone.timedelta(2)).date(),
                                              time=timezone.now().time(),
                                              description='This is test Meetup',
                                              venue='Foo Systers',
-                                             meetup_location=self.location1,
+                                             meetup_location=self.location,
                                              leader=self.systers_user,
                                              created_by=self.systers_user,
                                              last_updated=timezone.now())
