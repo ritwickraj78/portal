@@ -72,7 +72,7 @@ class AddMeetupForm(ModelFormWithHelper):
         helper_class = SubmitCancelFormHelper
         helper_cancel_href = "{% url 'index' %}"
 
-    images = MultiFileField()
+    images = MultiFileField(required=False)
 
     def __init__(self, *args, **kwargs):
         self.created_by = kwargs.pop('created_by')
@@ -112,7 +112,7 @@ class AddMeetupForm(ModelFormWithHelper):
 class EditMeetupForm(ModelFormWithHelper):
     """Form to edit Meetup"""
 
-    images = MultiFileField()
+    images = MultiFileField(required=False)
 
     class Meta:
         model = Meetup
@@ -259,3 +259,21 @@ class EditSupportRequestCommentForm(ModelFormWithHelper):
         helper_class = SubmitCancelFormHelper
         helper_cancel_href = "{% url 'view_support_request' meetup.slug" \
                              " support_request.pk %}"
+
+
+class PastMeetup(ModelFormWithHelper):
+    images = MultiFileField(required=False)
+
+    class Meta:
+        model = Meetup
+        fields = ('resources',)
+        helper_class = SubmitCancelFormHelper
+        helper_cancel_href = "{% url 'view_meetup' meetup.slug %}"
+
+    def save(self, commit=True):
+        """Override save to add created_by and meetup_location to the instance"""
+        instance = super(PastMeetup, self).save(commit)
+        if self.cleaned_data['images']:
+            for img in self.cleaned_data['images']:
+                MeetupImages.objects.create(image=img, meetup=instance)
+        return instance

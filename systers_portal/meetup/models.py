@@ -20,7 +20,7 @@ class Meetup(models.Model):
     meetup_location = models.ForeignKey(City, verbose_name="Meetup Location")
     created_by = models.ForeignKey(SystersUser, null=True, verbose_name="Created By")
     last_updated = models.DateTimeField(auto_now=True, verbose_name="Last Update")
-    resources = RichTextField(null=True, verbose_name="Meetup Resources")
+    resources = RichTextField(null=True, verbose_name="Meetup Resources", blank=True)
 
     class Meta:
         permissions = (
@@ -97,4 +97,3 @@ class SupportRequest(models.Model):
 class MeetupImages(models.Model):
     meetup = models.ForeignKey(Meetup, verbose_name="Meetup")
     image = models.FileField(upload_to="meetup/images", verbose_name="Meetup Image")
-
