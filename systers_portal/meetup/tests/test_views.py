@@ -1063,6 +1063,7 @@ class DeleteSupportRequestCommentViewTestCase(MeetupBaseCase, TestCase):
         comments = Comment.objects.all()
         self.assertEqual(len(comments), 0)
 
+
 # class ApiForVmsViewTestCase(APITestCase, TestCase):
 #     def setUp(self):
 #         self.user = User.objects.create_user(username='foo', password='foobar',
@@ -1181,8 +1182,8 @@ class UpcomingMeetupsSearchViewTestCase(MeetupBaseCase, TestCase):
                                               'meetup': 'Foo Baz',
                                               'location': 'Baz',
                                               'meetup_slug': 'foobar',
-                                              'distance': 900,
-                                              'unit': 'kilometers from your location'}]})
+                                              'distance': 900}],
+                          'unit': 'kilometers from your location'})
 
         data1 = {'keyword': 'Foo Bar'}
         response = self.client.post(url, data1, format='json')
@@ -1191,8 +1192,8 @@ class UpcomingMeetupsSearchViewTestCase(MeetupBaseCase, TestCase):
                                               'meetup': 'Foo Bar Baz',
                                               'location': 'Baz',
                                               'meetup_slug': 'foo-bar-baz',
-                                              'distance': 900,
-                                              'unit': 'kilometers from your location'}]})
+                                              'distance': 900}],
+                          'unit': 'kilometers from your location'})
 
         data2 = {'keyword': 'Foo Bar', 'location': 'Baz'}
         response = self.client.post(url, data2, format='json')
@@ -1201,13 +1202,14 @@ class UpcomingMeetupsSearchViewTestCase(MeetupBaseCase, TestCase):
                                               'meetup': 'Foo Bar Baz',
                                               'location': 'Baz',
                                               'meetup_slug': 'foo-bar-baz',
-                                              'distance': 0,
-                                              'unit': 'kilometers from your location'}]})
+                                              'distance': 0}],
+                          'unit': 'kilometers from your location'})
 
         data3 = {'keyword': 'new'}
         response = self.client.post(url, data3, format='json')
         self.assertEqual(json.loads(response.content.decode('utf-8')),
-                         {'search_results': []})
+                         {'search_results': [],
+                          'unit': ''})
 
         data4 = {'keyword': 'Foob'}
         response = self.client.post(url, data4, format='json')
@@ -1216,8 +1218,8 @@ class UpcomingMeetupsSearchViewTestCase(MeetupBaseCase, TestCase):
                                               'meetup': 'Foob Baz',
                                               'location': 'Baz',
                                               'meetup_slug': 'foobarbaz',
-                                              'distance': 900,
-                                              'unit': 'kilometers from your location'}]})
+                                              'distance': 900}],
+                          'unit': 'kilometers from your location'})
 
         data5 = {'keyword': 'Foo', 'location': 'Baz'}
         response = self.client.post(url, data5, format='json')
@@ -1226,18 +1228,16 @@ class UpcomingMeetupsSearchViewTestCase(MeetupBaseCase, TestCase):
                                               'meetup': 'Foo Baz',
                                               'location': 'Baz',
                                               'meetup_slug': 'foobar',
-                                              'distance': 0,
-                                              'unit': 'kilometers from your location'},
+                                              'distance': 0},
                                              {'date': self.meetup3.date.isoformat(),
                                               'meetup': 'Foob Baz',
                                               'location': 'Baz',
                                               'meetup_slug': 'foobarbaz',
-                                              'distance': 0,
-                                              'unit': 'kilometers from your location'},
+                                              'distance': 0},
                                              {'date': self.meetup.date.isoformat(),
                                               'meetup': 'Foo Bar Baz',
                                               'location': 'Baz',
                                               'meetup_slug': 'foo-bar-baz',
-                                              'distance': 0,
-                                              'unit': 'kilometers from your location'},
-                                             ]})
+                                              'distance': 0},
+                                             ],
+                          'unit': 'kilometers from your location'})
